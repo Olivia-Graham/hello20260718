@@ -4,6 +4,7 @@ import time
 import threading
 import urllib.request
 import os
+import re
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from datetime import datetime
 
@@ -42,26 +43,34 @@ def parse_sold_number(value):
     if value is None:
         return None
     
-    # 转成字符串，去除两端空格和逗号
-    text = str(value).strip().replace(",", "")
-    if not text:
+    # 统一转为字符串，并把西方计数法的逗号去掉（比如 1,234 -> 1234）
+    text = str(value).replace(",", "")
+    
+    # 使用正则表达式进行暴力提取：
+    # ([\d\.]+) 负责抓取连续的数字（包括小数点）
+    # \s* 兼容数字和单位之间可能存在的不可见空格
+    # ([万千wWkK]?) 负责抓取可能跟随在数字后面的单位
+    match = re.search(r'([\d\.]+)\s*([万千wWkK]?)', text)
+    
+    if not match:
         return None
         
-    # 清理可能附带的修饰词
-    text = text.replace("已售", "").replace("+", "")
+    num_str = match.group(1)
+    unit = match.group(2).lower()
     
     try:
-        # 如果包含“万”字，剥离汉字并乘以 10000
-        if "万" in text:
-            text = text.replace("万", "")
-            return int(float(text) * 10000)
-        # 兼容可能出现的“千”字
-        elif "千" in text:
-            text = text.replace("千", "")
-            return int(float(text) * 1000)
+        # 先转化为浮点数处理小数情况
+        num = float(num_str)
+        
+        if unit in ['万', 'w']:
+            return int(num * 10000)
+        elif unit in ['千', 'k']:
+            return int(num * 1000)
         else:
-            return int(text)
-    except ValueError:
+            return int(num)
+            
+    except Exception:
+        # 如果遇到无法转化为 float 的极端异常字符串，安全返回 None
         return None
 
 
