@@ -150,12 +150,13 @@ def fetch_history():
         print(f"  Supabase 读取失败: {e}")
         return []
 
-
 def fetch_all():
     print(f"[{datetime.now().strftime('%H:%M:%S')}] 开始抓取数据...")
     results = []
     for course in COURSES:
         success = False
+        last_error = "未知错误"  # 新增：用于记录真实的报错信息
+        
         for attempt in range(3):
             try:
                 data = fetch_course(course["id"])
@@ -164,8 +165,10 @@ def fetch_all():
                 success = True
                 break
             except Exception as e:
+                last_error = str(e)  # 捕获每一次失败的具体原因
                 print(f"  第{attempt + 1}次失败 {course['label']}: {e}")
                 time.sleep(3)
+                
         if not success:
             results.append(
                 {
@@ -173,7 +176,8 @@ def fetch_all():
                     "soldNumber": None,
                     "unitPrice": None,
                     "kscoinPrice": None,
-                    "error": "重试3次均失败",
+                    # 下面这行最关键，把真实的错误抛到网页前端
+                    "error": f"抓取失败: {last_error}",
                 }
             )
         time.sleep(2)
@@ -183,6 +187,7 @@ def fetch_all():
     cache["status"] = "ok"
     save_to_supabase(results)
     print(f"[{datetime.now().strftime('%H:%M:%S')}] 抓取完成\n")
+
 
 
 def background_loop():
