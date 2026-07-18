@@ -38,14 +38,31 @@ SUPABASE_KEY = os.environ.get(
 
 cache = {"data": [], "updated_at": None, "status": "loading"}
 
-
 def parse_sold_number(value):
     if value is None:
         return None
+    
+    # 转成字符串，去除两端空格和逗号
     text = str(value).strip().replace(",", "")
     if not text:
         return None
-    return int(text)
+        
+    # 清理可能附带的修饰词
+    text = text.replace("已售", "").replace("+", "")
+    
+    try:
+        # 如果包含“万”字，剥离汉字并乘以 10000
+        if "万" in text:
+            text = text.replace("万", "")
+            return int(float(text) * 10000)
+        # 兼容可能出现的“千”字
+        elif "千" in text:
+            text = text.replace("千", "")
+            return int(float(text) * 1000)
+        else:
+            return int(text)
+    except ValueError:
+        return None
 
 
 def fetch_course(course_id):
