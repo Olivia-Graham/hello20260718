@@ -198,14 +198,19 @@ class Handler(BaseHTTPRequestHandler):
         else:
             self._respond(404, "text/plain", b"Not found")
 
+
     def _respond(self, code, content_type, body):
         self.send_response(code)
         self.send_header("Content-Type", content_type)
         self.send_header("Access-Control-Allow-Origin", "*")
+        
+        # 👇 新增下面这一行，彻底禁用 API 的缓存
+        self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+        
         self.send_header("Content-Length", len(body))
         self.end_headers()
         self.wfile.write(body)
-
+        
     def do_OPTIONS(self):
         self.send_response(200)
         self.send_header("Access-Control-Allow-Origin", "*")
