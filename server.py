@@ -211,16 +211,20 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
     def do_GET(self):
-        if self.path == "/api/sales":
+        # 👇 加上这一行，把问号后面的参数切掉，只取干净的路径
+        clean_path = self.path.split('?')[0]
+
+        # 下面的判断全部改为使用 clean_path
+        if clean_path == "/api/sales":
             body = json.dumps(cache, ensure_ascii=False).encode()
             self._respond(200, "application/json", body)
 
-        elif self.path == "/api/history":
+        elif clean_path == "/api/history":
             data = fetch_history()
             body = json.dumps(data, ensure_ascii=False).encode()
             self._respond(200, "application/json", body)
 
-        elif self.path in ("/", "/index.html"):
+        elif clean_path in ("/", "/index.html"):
             try:
                 with open("index.html", "rb") as f:
                     self._respond(200, "text/html; charset=utf-8", f.read())
@@ -228,6 +232,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._respond(404, "text/plain", b"index.html not found")
         else:
             self._respond(404, "text/plain", b"Not found")
+
 
 
     def _respond(self, code, content_type, body):
